@@ -1,0 +1,30 @@
+{
+	"schemaVersion": 1,
+	"id": "scmc",
+	"version": "${version}",
+	"name": "SCMC",
+	"description": "An server side mode for blocking uninstalled client mods & the server side for ServerModMenu",
+	"authors": [
+		"SkellyBuilds!"
+	],
+	"contact": {
+		"sources": "https://github.com/SkellyBuilds/SCMC"
+	},
+	"license": "MIT",
+	"icon": "assets/scmc/icon.png",
+	"environment": "server",
+	"mixins": [
+		"scmc.mixin.json"
+	],
+	"entrypoints": {
+		"main": [
+			"com.skellybuilds.SCMC.SCMC"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.15.11",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}
