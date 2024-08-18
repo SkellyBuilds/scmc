@@ -36,6 +36,11 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation  'com.google.code.gson:gson:2.8.8'
+
+	// JavaScript implementation
+	implementation 'org.graalvm.js:js:20.3.4'
+	implementation 'org.graalvm.sdk:graal-sdk:20.3.4'
+
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
