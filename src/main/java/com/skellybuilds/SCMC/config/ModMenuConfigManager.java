@@ -80,9 +80,11 @@ public class ModMenuConfigManager {
 			}
 			if (file.exists()) {
 				Gson gson = new Gson();
-				JsonObject json;
+				JsonObject json = null;
 				StringBuilder cJson = new StringBuilder();
 				Map<String, String> cJK = new HashMap<>();
+				String cVersion = "";
+				boolean canUpdateConfig = true;
 
 				try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 					String line;
@@ -92,7 +94,18 @@ public class ModMenuConfigManager {
 					String mtlC = "";
 					boolean startStuff = false;
 
+
 					while ((line = br.readLine()) != null ) {
+
+						if(line.contains("DISABLE-CONFIG-UPDATES")){
+							canUpdateConfig = false;
+						}
+
+						if(line.contains("Config Version:")){
+							line = line.substring(0, line.length()-2);
+							int lD = line.indexOf(": ");
+							cVersion = line.substring(lD+2);
+						}
 
 						int comment1LIndex = line.indexOf("//");
 
@@ -109,6 +122,7 @@ public class ModMenuConfigManager {
 							int beforeKS = line.indexOf(":");
 							if (beforeKS == -1){
 								line = line.substring(0, comment1LIndex);
+								cJson.append(line);
 								continue;
 							}; // No key found
 
@@ -165,8 +179,18 @@ public class ModMenuConfigManager {
 					}
 				}
 
-				json = gson.fromJson(cJson.toString(), JsonObject.class);
+				if(cJson.isEmpty()){
+					save();
+					load();
+					return;
+				}
 
+				try {
+					json = gson.fromJson(cJson.toString(), JsonObject.class);
+				} catch (JsonSyntaxException e) {
+					SCMC.LOGGER.error("Failed to load Config: Parsed JS to JSON file has failed \n More Details: \n {}\n\n^\n| - Error information related to config \n Don't understand, need help or you believe this is a bug?\n Report to https://github.com/SkellyBuilds/scmc/issues", e.toString());
+					throw new RuntimeException("Config parsing failed! Scroll to the error");
+				}
 				for (Field field : ModMenuConfig.class.getDeclaredFields()) {
 					if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
 						if (StringSetConfigOption.class.isAssignableFrom(field.getType())) {
@@ -185,9 +209,23 @@ public class ModMenuConfigManager {
 								ConfigOptionStorage.setBoolean(option.getKey(), jsonPrimitive.getAsBoolean());
 								if(cJK.get(option.getKey()) != null) ConfigOptionStorage.setComment(option.getKey(), cJK.get(option.getKey()));
 							}
+						} else if(IntConfigOption.class.isAssignableFrom(field.getType())){
+							IntConfigOption option = (IntConfigOption) field.get(null);
+							JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive(option.getKey());
+							if (jsonPrimitive != null && jsonPrimitive.isNumber()) {
+								ConfigOptionStorage.setInt(option.getKey(), jsonPrimitive.getAsInt());
+								if(cJK.get(option.getKey()) != null) ConfigOptionStorage.setComment(option.getKey(), cJK.get(option.getKey()));
+							}
 						}
 					}
 				}
+
+				if(!cVersion.isEmpty() && canUpdateConfig){
+					if(!cVersion.equals(SCMC.MainModContainer.getMetadata().getCustomValue("configV").getAsString())){
+						save(); // changes the config version to latest header & version so basically an auto update
+					}
+				}
+
 			}
 		} catch (IllegalAccessException | IOException e) {
 			System.err.println("Couldn't load Mod Menu configuration file; reverting to defaults");
@@ -217,6 +255,12 @@ public class ModMenuConfigManager {
 						JsonArray array = new JsonArray();
 						ConfigOptionStorage.getStringSet(option.getKey()).forEach(array::add);
 						config.add(option.getKey(), array);
+						if(!option.getComment().isEmpty()){
+							cJK.put(option.getKey(), option.getComment());
+						}
+					} else if(IntConfigOption.class.isAssignableFrom(field.getType())){
+						IntConfigOption option = (IntConfigOption) field.get(null);
+						config.addProperty(option.getKey(), ConfigOptionStorage.getInt(option.getKey()));
 						if(!option.getComment().isEmpty()){
 							cJK.put(option.getKey(), option.getComment());
 						}

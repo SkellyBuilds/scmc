@@ -18,9 +18,13 @@ public class Network {
     ServerThread server;
     public boolean crashed;
     public String howC;
-
+    public boolean isOnline = false;
     public Network(int port) {
         this.port = port;
+    }
+
+    public void setPort(int port){
+        this.port  =port;
     }
 
     public void init(ServerCommands cmds){
@@ -34,12 +38,13 @@ public class Network {
                 Socket socket = serverSocket.accept();
                 this.server = new ServerThread(socket, cmds);
                 server.start();
+                isOnline = true;
             }
         } catch (Exception e) {
             LoggerFactory.getLogger("SCMC [Server Client Mods Checker]").error("Unable to start the server? Is the port free & available?");
             this.howC = "Port "+port + " is not available to use as the server could not be started";
             this.crashed = true;
-
+            this.isOnline = false;
         }
         });
 

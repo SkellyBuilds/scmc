@@ -31,7 +31,7 @@ public class ServerLoginProcessing {
             Mods md = new Mods();
             md.loadMods();
             List<String> allIDs = Arrays.asList(PlayerN.get(username));
-            List<String> ModL = md.getMods().stream().map((ra) -> ra.id).toList();
+            List<String> ModL = md.getMods().stream().filter(ra -> !ra.isOptional).map((ra) -> ra.id).toList();
 
 
             if(!new HashSet<>(allIDs).containsAll(ModL)){

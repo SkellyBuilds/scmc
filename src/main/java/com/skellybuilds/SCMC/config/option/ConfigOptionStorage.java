@@ -8,6 +8,15 @@ public class ConfigOptionStorage {
 	private static final Map<String, Boolean> BOOLEAN_OPTIONS = new HashMap<>();
 	private static final Map<String, Set<String>> STRING_SET_OPTIONS = new HashMap<>();
 	private static final Map<String, String> COMMENT_DATA = new HashMap<>(); // Key, Comment
+	private static final Map<String, Integer> INT_OPTIONS = new HashMap<>();
+
+	public static void setInt(String key, Integer number){
+		INT_OPTIONS.put(key, number);
+	}
+
+	public static Integer getInt(String key){
+		return INT_OPTIONS.get(key);
+	}
 
 	public static void setStringSet(String key, Set<String> value) {
 		STRING_SET_OPTIONS.put(key, value);

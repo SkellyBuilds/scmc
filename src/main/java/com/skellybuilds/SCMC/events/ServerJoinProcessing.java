@@ -21,6 +21,11 @@ public static void onEventRegister(ServerPlayNetworkHandler handler, PacketSende
 
     ServerPlayerEntity player = handler.getPlayer();
 
+    if(PlayerN.get(player.getName().getString()) == null){
+        player.sendMessage(Text.literal("Unable to fetch your player data! Is your server mod menu working or do you have it installed?"));
+        return;
+    }
+
     List<String> allIDs = Arrays.asList(PlayerN.get(player.getName().getString()));
     List<String> ModL = md.getMods().stream().filter(data -> !data.isOptional).map((ra) -> ra.id).toList();
 
