@@ -40,5 +40,6 @@ I will give more information related to this update soon but I should probably s
 - More dynamical exception handling for networking and the Main system
 - Added more configs (Not tested, please give feedback via the issues)
 - Config from JSON to JavaScript.
-
+- Testing git stuff
 **Thats all for now!** 
+
