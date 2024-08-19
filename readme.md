@@ -1,5 +1,7 @@
-# SCMC - 1.20.1
+# SCMC - 1.20.1 - 0.9.2.7
 Server Client Mod Checker 
+
+## ***THIS BUILD HAS NOT BEEN FULLY TESTED TO BETA, RUN THIS ON YOUR OWN RISK, THIS WILL BE REMOVED & UPDATED ONCE PROPER TESTING IS COMPLETED***
 
 A simple fabric mod that communicates with server mod menu so that your members can download mods
 
@@ -9,28 +11,34 @@ Still being worked on. Still a work in progress but its good for public release.
 Not much dependencies other than minecraft 1.20.1 and fabric loader 0.16.0
 Just run it in your server and you are fine
 ## How to customize
-Using SCMC, there will be a config file named SCMC.json generated just for you :)
+Using SCMC, there will be a config file named SCMC.js generated just for you :)
 What does it contain right now?
 This 
-```json
-{
-  "cankickplayerswithnomods": true,
-  "useonlyuniversalmods": true,
-  "usethismods": [],
-  "dontusethismods": []
+```js
+ module.exports = {
+  "useonlyuniversalmods": true, /*Universal mods basically are both client side & server side mods. So one for both! 
+  If you leave this enabled, server mods will not be used unless you specified otherwise*/
+
+  "cankickplayerswithnomods": true, /*This gives you the choice to allow the mod to kick players if they are missing a mod or otherwise 
+  If you choose false, it won't kick the player but notify the player about the missing mods so they can be aware!*/
+
+  "usethismodsonly": [], /*This is an array that will only use the mod ids provided for the mod, nothing else. 
+  If you leave it empty, All mods will be used by SCMC unless you configurated it otherwise*/
+
+  "dontusethismods": [], //This will basically blacklist a mod from being registered in SCMC, if you have it usethismods, the blacklist won't be checked since the whitelist is always checked first. 
+  "usethismods": [], //This is basically an exception, which ignores everything and registers anyways, sort of like a whitelist
+  "optionalmods": [] //This list of mods won't be required to download, meaning they won't show up in the missing mod screen and there will be a GUI difference for the mod to clarify via servermodmenu
 }
 ```
-Now if you leave this config alone. It should do
-* Remove any server side only mods via useonlyuniversalmods
-<br><br>*But what if i add some mod names into the usethismods or dontusethismods arrays?
-Its pretty self explanatory*
-<br><br>
-* If you put any mod ids into usethismods array. SCMC will only register those mods only. If the array is empty, all mods are registered (unless useonlyuniversalmods is enabled).
-<br><br>
-* If you put any mod ids into dontusethismods array. SCMC will not register this mods.
-<br><br>
-* Turning off cankickplayerswithnomods will allow the player to join the server but they will be notified about missing mods.
 
-Simple enough right? becareful on what you put and make sure you don't leave out any dependencies.
+Configuration has been converted to javascript for better documentation and future planned updates related.
+Don't worry, it will seemlessly convert it so you don't have to set everything back.
+
+I will give more information related to this update soon but I should probably sleep.
+
+### Change Log
+- More dynamical exception handling for networking and the Main system
+- Added more configs (Not tested, please give feedback via the issues)
+- Config from JSON to JavaScript.
 
 **Thats all for now!** 

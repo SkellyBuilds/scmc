@@ -4,6 +4,10 @@ plugins {
 }
 
 version = project.mod_version
+ext {
+	configV = config_version
+}
+
 group = project.maven_group
 
 base {
@@ -37,10 +41,6 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation  'com.google.code.gson:gson:2.8.8'
 
-	// JavaScript implementation
-	implementation 'org.graalvm.js:js:20.3.4'
-	implementation 'org.graalvm.sdk:graal-sdk:20.3.4'
-
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	
@@ -50,7 +50,10 @@ processResources {
 	inputs.property "version", project.version
 
 	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+		expand([
+				"version": project.version,
+				"configV": project.ext.configV
+		])
 	}
 }
 

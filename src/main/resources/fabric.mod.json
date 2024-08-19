@@ -2,6 +2,9 @@
 	"schemaVersion": 1,
 	"id": "scmc",
 	"version": "${version}",
+	"custom": {
+		"configV": "${configV}"
+	},
 	"name": "SCMC",
 	"description": "An server side mode for blocking uninstalled client mods & the server side for ServerModMenu",
 	"authors": [

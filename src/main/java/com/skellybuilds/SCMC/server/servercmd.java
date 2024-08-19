@@ -1,7 +1,6 @@
 package com.skellybuilds.SCMC.server;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.skellybuilds.SCMC.config.ModMenuConfig;
 import com.skellybuilds.SCMC.utils.Mods;
@@ -50,29 +49,68 @@ public class servercmd {
         ModContainer modContainer = modContainerOptional.get();
         Path modJarPath = modContainer.getOrigin().getPaths().get(0);
 
-        if(ModMenuConfig.USEONLYCLIENTMODS.getValue() && Objects.equals(modContainer.getMetadata().getEnvironment().toString().toLowerCase(), "SERVER")){
-            return;
-        }
-
-        if(!ModMenuConfig.DONTUSETHISMODS.getValue().isEmpty()) {
-            AtomicBoolean isMSE = new AtomicBoolean(false);
-            ModMenuConfig.DONTUSETHISMODS.getValue().forEach((string) -> {
-                if (Objects.equals(modContainer.getMetadata().getId(), string)) {
-                    isMSE.set(true);
-                }
-            });
-            if(isMSE.get()) return;
-        }
-
-
-        if(!ModMenuConfig.USETHISMODS.getValue().isEmpty()) {
-            AtomicBoolean isMS = new AtomicBoolean(false);
+        if(!ModMenuConfig.USETHISMODS.getValue().isEmpty()){
+            AtomicBoolean isMSEA = new AtomicBoolean(false);
             ModMenuConfig.USETHISMODS.getValue().forEach((string) -> {
-                if (Objects.equals(modContainer.getMetadata().getId(), string)) {
-                    isMS.set(true);
-                }
+                if (Objects.equals(modContainer.getMetadata().getId(), string)) isMSEA.set(true);
             });
-            if(!isMS.get()) return;
+
+            if(!isMSEA.get()){
+                String modenv = modContainer.getMetadata().getEnvironment().toString().toUpperCase();
+                if (ModMenuConfig.USEONLYCLIENTMODS.getValue() && Objects.equals(modenv, "SERVER")) {
+                    return;
+                }
+
+
+                if (!ModMenuConfig.DONTUSETHISMODS.getValue().isEmpty()) {
+                    AtomicBoolean isMSE = new AtomicBoolean(false);
+                    ModMenuConfig.DONTUSETHISMODS.getValue().forEach((string) -> {
+                        if (Objects.equals(modContainer.getMetadata().getId(), string)) {
+                            isMSE.set(true);
+                        }
+                    });
+                    if (isMSE.get()) return;
+                }
+
+
+                if (!ModMenuConfig.USETHISMODSONLY.getValue().isEmpty()) {
+                    AtomicBoolean isMS = new AtomicBoolean(false);
+                    ModMenuConfig.USETHISMODSONLY.getValue().forEach((string) -> {
+                        if (Objects.equals(modContainer.getMetadata().getId(), string)) {
+                            isMS.set(true);
+                        }
+                    });
+                    if (!isMS.get()) return;
+                }
+            }
+        } else {
+
+            String modenv = modContainer.getMetadata().getEnvironment().toString().toUpperCase();
+            if (ModMenuConfig.USEONLYCLIENTMODS.getValue() && Objects.equals(modenv, "SERVER")) {
+                return;
+            }
+
+
+            if (!ModMenuConfig.DONTUSETHISMODS.getValue().isEmpty()) {
+                AtomicBoolean isMSE = new AtomicBoolean(false);
+                ModMenuConfig.DONTUSETHISMODS.getValue().forEach((string) -> {
+                    if (Objects.equals(modContainer.getMetadata().getId(), string)) {
+                        isMSE.set(true);
+                    }
+                });
+                if (isMSE.get()) return;
+            }
+
+
+            if (!ModMenuConfig.USETHISMODSONLY.getValue().isEmpty()) {
+                AtomicBoolean isMS = new AtomicBoolean(false);
+                ModMenuConfig.USETHISMODSONLY.getValue().forEach((string) -> {
+                    if (Objects.equals(modContainer.getMetadata().getId(), string)) {
+                        isMS.set(true);
+                    }
+                });
+                if (!isMS.get()) return;
+            }
         }
 
         try {

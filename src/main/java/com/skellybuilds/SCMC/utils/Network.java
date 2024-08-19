@@ -16,12 +16,17 @@ import java.util.function.BiConsumer;
 public class Network {
     int port;
     ServerThread server;
+    public boolean crashed;
+    public String howC;
 
     public Network(int port) {
         this.port = port;
     }
 
     public void init(ServerCommands cmds){
+        Thread connectionI = new Thread(() -> {
+
+
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             LoggerFactory.getLogger("SCMC [Server Client Mods Checker]").info("Server is listening on port {}", port);
            // System.out.println();
@@ -32,9 +37,17 @@ public class Network {
             }
         } catch (Exception e) {
             LoggerFactory.getLogger("SCMC [Server Client Mods Checker]").error("Unable to start the server? Is the port free & available?");
-            throw new RuntimeException("Unable to start SCMC communications server!");
+            this.howC = "Port "+port + " is not available to use as the server could not be started";
+            this.crashed = true;
+
         }
+        });
+
+        connectionI.setName("Socket Thread "+connectionI.getId());
+        connectionI.start();
     }
+
+
 
    public static class ServerCommands {
         private final List<Command> Commands = new ArrayList<>();

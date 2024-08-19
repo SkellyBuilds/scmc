@@ -5,44 +5,31 @@ import com.google.gson.*;
 import com.skellybuilds.SCMC.SCMC;
 import com.skellybuilds.SCMC.config.option.*;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.text.Text;
 
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Locale;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Value;
+
 
 public class ModMenuConfigManager {
 	private static File file;
 	//private static  engine;
 
-	private static JsonObject jsObjtoJSON(Value value, Gson gson) {
-		JsonObject jsonObject = new JsonObject();
 
-		for (String key : value.getMemberKeys()) {
-			Value memberValue = value.getMember(key);
-			JsonElement jsonElement = gson.toJsonTree(memberValue.as(Object.class));
-			jsonObject.add(key, jsonElement);
-		}
-
-		return jsonObject;
-	}
-
-
-	private static void prepareConfigFile() {
+	public static void prepareConfigFile() {
 		if (file != null) {
 			return;
 		}
 
 		file = new File(FabricLoader.getInstance().getConfigDir().toFile(), SCMC.MOD_ID + ".js");
+	}
+
+	public static boolean fileExistant(){
+		return file.exists();
 	}
 
 	public static void convertToJS(){
@@ -65,6 +52,8 @@ public class ModMenuConfigManager {
 			}
 
 			load();
+
+			save();
 
 		} catch (IOException e) {
             SCMC.LOGGER.error("Unable to read previous json");
@@ -90,30 +79,111 @@ public class ModMenuConfigManager {
 				}
 			}
 			if (file.exists()) {
-				//BufferedReader br = new BufferedReader(new FileReader(file));
 				Gson gson = new Gson();
 				JsonObject json;
-				Path filePath = Paths.get(file.getAbsolutePath());
-				String scriptContent = Files.readString(filePath);
+				StringBuilder cJson = new StringBuilder();
+				Map<String, String> cJK = new HashMap<>();
 
-				try (Context context = Context.create("js")) {
-					context.eval("js",scriptContent);
-					json = jsObjtoJSON(context.getBindings("js").getMember("module").getMember("exports"), gson);
+				try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+					String line;
+					boolean inMultiLineComment = false;
+					boolean isCommentButNoKey = false;
+					StringBuilder multiLineComment = new StringBuilder();
+					String mtlC = "";
+					boolean startStuff = false;
+
+					while ((line = br.readLine()) != null ) {
+
+						int comment1LIndex = line.indexOf("//");
+
+						if(!startStuff) {
+							if (line.contains("module.exports = ")) {
+								line = line.replace("module.exports = ", "");
+								startStuff = true;
+							} else {
+								continue; // example headers or extra code
+							}
+						}
+
+						if (comment1LIndex != -1 && !inMultiLineComment) {
+							int beforeKS = line.indexOf(":");
+							if (beforeKS == -1){
+								line = line.substring(0, comment1LIndex);
+								continue;
+							}; // No key found
+
+							cJK.put(line.substring(0, beforeKS).replace(" ", "").replaceAll("\"", ""), line.substring(comment1LIndex + 2).trim());
+							line = line.substring(0, comment1LIndex);
+						}
+
+						int multiLineStartIndex = line.indexOf("/*");
+						int multiLineEndIndex = line.indexOf("*/");
+
+						if (multiLineStartIndex != -1 && !inMultiLineComment) {
+							int beforeKS = line.indexOf(":");
+							if (beforeKS == -1){
+								isCommentButNoKey = true;
+								line = line.substring(0, multiLineStartIndex);
+								cJson.append(line);
+								continue;
+							}; // No key found
+							inMultiLineComment = true;
+							mtlC = line.substring(0, beforeKS);
+							multiLineComment.append(line.substring(multiLineStartIndex + 2).trim()).append("\n");
+							line = line.substring(0, multiLineStartIndex);
+							cJson.append(line);
+						} else if (inMultiLineComment || isCommentButNoKey) {
+							if (multiLineEndIndex != -1) {
+								if(isCommentButNoKey){
+									isCommentButNoKey = false;
+									if(line.replaceAll(" ", "").length() > 2) { // if */ only, no use
+										line = line.substring(multiLineEndIndex + 2);
+										cJson.append(line);
+									}
+									continue;
+								}
+								inMultiLineComment = false;
+								multiLineComment.append(line.substring(0, multiLineEndIndex).trim());
+								// Its better to leave comments as it is, any contributors or myself will have to remove the breaks themselves
+								String fixedMLC = multiLineComment.toString(); //.substring(1);
+								//fixedMLC = fixedMLC.substring(0, fixedMLC.length() -1);
+								multiLineComment = new StringBuilder();
+								cJK.put(mtlC.replace(" ", "").replaceAll("\"", ""), fixedMLC);
+								if(line.replaceAll(" ", "").length() > 2) { // if */ only, no use
+									line = line.substring(multiLineEndIndex + 2);
+									cJson.append(line);
+								}
+							} else {
+								if(!isCommentButNoKey) multiLineComment.append(line.trim()).append("\n");
+							}
+						} else {
+								cJson.append(line);
+						}
+
+
+
+					}
 				}
+
+				json = gson.fromJson(cJson.toString(), JsonObject.class);
 
 				for (Field field : ModMenuConfig.class.getDeclaredFields()) {
 					if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
 						if (StringSetConfigOption.class.isAssignableFrom(field.getType())) {
-							JsonArray jsonArray = json.getAsJsonArray(field.getName().toLowerCase(Locale.ROOT));
+							StringSetConfigOption option = (StringSetConfigOption) field.get(null);
+							JsonArray jsonArray = json.getAsJsonArray(option.getKey());
 							if (jsonArray != null) {
-								StringSetConfigOption option = (StringSetConfigOption) field.get(null);
 								ConfigOptionStorage.setStringSet(option.getKey(), Sets.newHashSet(jsonArray).stream().map(JsonElement::getAsString).collect(Collectors.toSet()));
+								if(cJK.get(option.getKey()) != null){
+									ConfigOptionStorage.setComment(option.getKey(), cJK.get(option.getKey()));
+								}
 							}
 						} else if (BooleanConfigOption.class.isAssignableFrom(field.getType())) {
-							JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive(field.getName().toLowerCase(Locale.ROOT));
+							BooleanConfigOption option = (BooleanConfigOption) field.get(null);
+							JsonPrimitive jsonPrimitive = json.getAsJsonPrimitive(option.getKey());
 							if (jsonPrimitive != null && jsonPrimitive.isBoolean()) {
-								BooleanConfigOption option = (BooleanConfigOption) field.get(null);
 								ConfigOptionStorage.setBoolean(option.getKey(), jsonPrimitive.getAsBoolean());
+								if(cJK.get(option.getKey()) != null) ConfigOptionStorage.setComment(option.getKey(), cJK.get(option.getKey()));
 							}
 						}
 					}
@@ -130,18 +200,26 @@ public class ModMenuConfigManager {
 		prepareConfigFile();
 
 		JsonObject config = new JsonObject();
+		Map<String, String> cJK = new HashMap<>();
 
 		try {
 			for (Field field : ModMenuConfig.class.getDeclaredFields()) {
 				if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
 					if (BooleanConfigOption.class.isAssignableFrom(field.getType())) {
 						BooleanConfigOption option = (BooleanConfigOption) field.get(null);
-						config.addProperty(field.getName().toLowerCase(Locale.ROOT), ConfigOptionStorage.getBoolean(option.getKey()));
+						// i have no clue why prospector put the variable name instead of the key
+						config.addProperty(option.getKey(), ConfigOptionStorage.getBoolean(option.getKey()));
+						if(!option.getComment().isEmpty()){
+							cJK.put(option.getKey(), option.getComment());
+						}
 					} else if (StringSetConfigOption.class.isAssignableFrom(field.getType())) {
 						StringSetConfigOption option = (StringSetConfigOption) field.get(null);
 						JsonArray array = new JsonArray();
 						ConfigOptionStorage.getStringSet(option.getKey()).forEach(array::add);
-						config.add(field.getName().toLowerCase(Locale.ROOT), array);
+						config.add(option.getKey(), array);
+						if(!option.getComment().isEmpty()){
+							cJK.put(option.getKey(), option.getComment());
+						}
 					}
 				}
 			}
@@ -149,10 +227,43 @@ public class ModMenuConfigManager {
 			e.printStackTrace();
 		}
 
+
+		String cVersion = "";
+		if(SCMC.MainModContainer == null) cVersion = "Unable to fetch config version. Report this as an issue at https://github.com/SkellyBuilds/scmc/issues";
+		else {
+			cVersion = SCMC.MainModContainer.getMetadata().getCustomValue("configV").getAsString();
+		}
+
+		String headerSt = Text.translatable("scmc.config.intro", Text.translatable("scmc.header"), cVersion).getString();
+
 		Gson GSON = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).setPrettyPrinting().create();
-		String jsonString = "module.exports = " + GSON.toJson(config);
+		String jsonString = "/*"+headerSt+"*/\n\n module.exports = " + GSON.toJson(config);
 
-
+		if(!cJK.isEmpty()) {
+			StringBuilder jsonStringC = new StringBuilder();
+			jsonStringC.append(jsonString);
+			final String[] finalJsonString = {jsonString};
+			cJK.forEach((Key, Comment) -> {
+				if(Comment.contains("\n")){
+					String fKey = "\"" + Key + "\":";
+					int keyI = finalJsonString[0].indexOf(fKey);
+					if (keyI != -1) {
+						int beforeNL = finalJsonString[0].indexOf('\n', keyI);
+						jsonStringC.insert(beforeNL, " /*" + Comment + "*/\n");
+						finalJsonString[0] = jsonStringC.toString();
+					}
+				} else {
+					String fKey = "\"" + Key + "\":";
+					int keyI = finalJsonString[0].indexOf(fKey);
+					if (keyI != -1) {
+						int beforeNL = finalJsonString[0].indexOf('\n', keyI);
+						jsonStringC.insert(beforeNL, " //" + Comment);
+						finalJsonString[0] = jsonStringC.toString();
+					}
+				}
+			});
+			jsonString = jsonStringC.toString();
+		}
 
 		try (FileWriter fileWriter = new FileWriter(file)) {
 			fileWriter.write(jsonString);

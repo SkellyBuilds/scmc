@@ -25,33 +25,70 @@ public class Mods {
                continue;
             }
 
-            String modenv = mod.getMetadata().getEnvironment().toString().toUpperCase();
-            if(ModMenuConfig.USEONLYCLIENTMODS.getValue() && Objects.equals(modenv, "SERVER")){
-                continue;
-            }
 
-
-            if(!ModMenuConfig.DONTUSETHISMODS.getValue().isEmpty()) {
-                AtomicBoolean isMSE = new AtomicBoolean(false);
-                ModMenuConfig.DONTUSETHISMODS.getValue().forEach((string) -> {
-                    if (Objects.equals(mod.getMetadata().getId(), string)) {
-                        isMSE.set(true);
-                    }
-                });
-                if(isMSE.get()) continue;
-            }
-
-
-            if(!ModMenuConfig.USETHISMODS.getValue().isEmpty()) {
-                AtomicBoolean isMS = new AtomicBoolean(false);
+            if(!ModMenuConfig.USETHISMODS.getValue().isEmpty()){
+                AtomicBoolean isMSEA = new AtomicBoolean(false);
                 ModMenuConfig.USETHISMODS.getValue().forEach((string) -> {
-                    if (Objects.equals(mod.getMetadata().getId(), string)) {
-                        isMS.set(true);
-                    }
+                    if (Objects.equals(mod.getMetadata().getId(), string)) isMSEA.set(true);
                 });
-                if(!isMS.get()) continue;
-            }
 
+                if(!isMSEA.get()){
+                    String modenv = mod.getMetadata().getEnvironment().toString().toUpperCase();
+                    if (ModMenuConfig.USEONLYCLIENTMODS.getValue() && Objects.equals(modenv, "SERVER")) {
+                        continue;
+                    }
+
+
+                    if (!ModMenuConfig.DONTUSETHISMODS.getValue().isEmpty()) {
+                        AtomicBoolean isMSE = new AtomicBoolean(false);
+                        ModMenuConfig.DONTUSETHISMODS.getValue().forEach((string) -> {
+                            if (Objects.equals(mod.getMetadata().getId(), string)) {
+                                isMSE.set(true);
+                            }
+                        });
+                        if (isMSE.get()) continue;
+                    }
+
+
+                    if (!ModMenuConfig.USETHISMODSONLY.getValue().isEmpty()) {
+                        AtomicBoolean isMS = new AtomicBoolean(false);
+                        ModMenuConfig.USETHISMODSONLY.getValue().forEach((string) -> {
+                            if (Objects.equals(mod.getMetadata().getId(), string)) {
+                                isMS.set(true);
+                            }
+                        });
+                        if (!isMS.get()) continue;
+                    }
+                }
+            } else {
+
+                String modenv = mod.getMetadata().getEnvironment().toString().toUpperCase();
+                if (ModMenuConfig.USEONLYCLIENTMODS.getValue() && Objects.equals(modenv, "SERVER")) {
+                    continue;
+                }
+
+
+                if (!ModMenuConfig.DONTUSETHISMODS.getValue().isEmpty()) {
+                    AtomicBoolean isMSE = new AtomicBoolean(false);
+                    ModMenuConfig.DONTUSETHISMODS.getValue().forEach((string) -> {
+                        if (Objects.equals(mod.getMetadata().getId(), string)) {
+                            isMSE.set(true);
+                        }
+                    });
+                    if (isMSE.get()) continue;
+                }
+
+
+                if (!ModMenuConfig.USETHISMODSONLY.getValue().isEmpty()) {
+                    AtomicBoolean isMS = new AtomicBoolean(false);
+                    ModMenuConfig.USETHISMODSONLY.getValue().forEach((string) -> {
+                        if (Objects.equals(mod.getMetadata().getId(), string)) {
+                            isMS.set(true);
+                        }
+                    });
+                    if (!isMS.get()) continue;
+                }
+            }
 
 
             Mod newMod = new Mod();
@@ -72,6 +109,11 @@ public class Mods {
             meta.contributers = cNames.toArray(new String[0]);
             meta.authors = aNames.toArray(new String[0]);
 
+            ModMenuConfig.OPTIONALMODS.getValue().forEach((string) -> {
+                if(Objects.equals(string, mod.getMetadata().getId())){
+                    newMod.isOptional = true;
+                }
+            });
 
             Contact was = new Contact();
             if(mod.getMetadata().getContact().get("homepage").isPresent()) {
@@ -112,6 +154,7 @@ public class Mods {
         public String version;
         public String id;
         public ModMeta meta;
+        public boolean isOptional = false;
         public boolean isComponent = false;
     }
 
