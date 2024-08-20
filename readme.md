@@ -1,7 +1,5 @@
-# SCMC - 1.20.1 - 0.9.2.7
+# SCMC - 1.20.1 - 0.9.3.5
 Server Client Mod Checker 
-
-## ***THIS BUILD HAS NOT BEEN FULLY TESTED TO BETA, RUN THIS ON YOUR OWN RISK, THIS WILL BE REMOVED & UPDATED ONCE PROPER TESTING IS COMPLETED***
 
 A simple fabric mod that communicates with server mod menu so that your members can download mods
 
