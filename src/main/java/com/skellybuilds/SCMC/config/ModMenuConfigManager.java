@@ -4,7 +4,9 @@ import com.google.common.collect.Sets;
 import com.google.gson.*;
 import com.skellybuilds.SCMC.SCMC;
 import com.skellybuilds.SCMC.config.option.*;
+import com.skellybuilds.SCMC.utils.StringBuilderTools;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 
 import java.io.*;
@@ -17,6 +19,8 @@ import java.util.stream.Collectors;
 
 public class ModMenuConfigManager {
 	private static File file;
+	// CCLists are apart of the Experimental restoring feature
+	private static final List<String> ccList = new ArrayList<>();  // Line Number|Index or beginnning of comment|Comment Data
 	//private static  engine;
 
 
@@ -80,11 +84,14 @@ public class ModMenuConfigManager {
 			}
 			if (file.exists()) {
 				Gson gson = new Gson();
-				JsonObject json = null;
+				JsonObject json;
 				StringBuilder cJson = new StringBuilder();
 				Map<String, String> cJK = new HashMap<>();
 				String cVersion = "";
 				boolean canUpdateConfig = true;
+				boolean restoreCsC = false; // Experimental Feature
+
+				int lNumber = 0;
 
 				try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 					String line;
@@ -97,14 +104,30 @@ public class ModMenuConfigManager {
 
 					while ((line = br.readLine()) != null ) {
 
+						lNumber++;
+
+						if(line.contains("EXP-RESTORE-CUSTOM-COMMENTS")){
+							restoreCsC = true;
+							StringBuilder fullD = new StringBuilder();
+							fullD.append(lNumber).append("|"); // Line Number
+							fullD.append(line.indexOf("EXP-RESTORE-CUSTOM-COMMENTS")).append("|");
+							fullD.append("// " + line.substring(line.indexOf("EXP-RESTORE-CUSTOM-COMMENTS")).trim());
+							ccList.add(fullD.toString());
+						}
+
 						if(line.contains("DISABLE-CONFIG-UPDATES")){
 							canUpdateConfig = false;
 						}
 
 						if(line.contains("Config Version:")){
-							line = line.substring(0, line.length()-2);
 							int lD = line.indexOf(": ");
-							cVersion = line.substring(lD+2);
+							if(lD == -1) continue;
+							if(line.contains("*/")) {
+								line = line.substring(0, line.length()-2);
+								cVersion = line.substring(lD + 2);
+							} else {
+								cVersion = line.substring(lD+2);
+							}
 						}
 
 						int comment1LIndex = line.indexOf("//");
@@ -121,6 +144,13 @@ public class ModMenuConfigManager {
 						if (comment1LIndex != -1 && !inMultiLineComment) {
 							int beforeKS = line.indexOf(":");
 							if (beforeKS == -1){
+								if(restoreCsC){
+								StringBuilder fullD = new StringBuilder();
+								fullD.append(lNumber).append("|"); // Line Number
+									fullD.append(comment1LIndex + 2).append("|");
+									fullD.append("// " + line.substring(comment1LIndex + 2).trim());
+									ccList.add(fullD.toString());
+								}
 								line = line.substring(0, comment1LIndex);
 								cJson.append(line);
 								continue;
@@ -133,6 +163,7 @@ public class ModMenuConfigManager {
 						int multiLineStartIndex = line.indexOf("/*");
 						int multiLineEndIndex = line.indexOf("*/");
 
+						// Multi Line Restoring comemnts soon
 						if (multiLineStartIndex != -1 && !inMultiLineComment) {
 							int beforeKS = line.indexOf(":");
 							if (beforeKS == -1){
@@ -190,6 +221,7 @@ public class ModMenuConfigManager {
 				} catch (JsonSyntaxException e) {
 					SCMC.LOGGER.error("Failed to load Config: Parsed JS to JSON file has failed \n More Details: \n {}\n\n^\n| - Error information related to config \n Don't understand, need help or you believe this is a bug?\n Report to https://github.com/SkellyBuilds/scmc/issues", e.toString());
 					throw new RuntimeException("Config parsing failed! Scroll to the error");
+
 				}
 				for (Field field : ModMenuConfig.class.getDeclaredFields()) {
 					if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
@@ -306,6 +338,16 @@ public class ModMenuConfigManager {
 					}
 				}
 			});
+
+			if(!ccList.isEmpty()){
+				jsonStringC.append("/*Here are your restored comments: \n");
+				ccList.forEach((ccData) -> {
+					String[] parts = ccData.split("\\|", 3);
+					jsonStringC.append(parts[2] + "\n");
+				});
+				jsonStringC.append("Since this is an experimental feature & I like having a good sleep schedule. This will do for now! You can put them where you want them to be*/");
+			}
+
 			jsonString = jsonStringC.toString();
 		}
 

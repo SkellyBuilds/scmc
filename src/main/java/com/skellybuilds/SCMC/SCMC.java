@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -39,36 +38,44 @@ public class SCMC implements ModInitializer {
 	public static final Map<String, String[]> PlayerN = new HashMap<>();
 	public static final ModContainer MainModContainer = FabricLoader.getInstance().getModContainer("scmc").orElse(null);
 	private boolean registerd = false;
+	public static MinecraftServer serverD = null; // may be useful for additional crashes
 
-	public void setCrash(Exception error, MinecraftServer server){
-		LocalDateTime now = LocalDateTime.now();
-
-		server.sendMessage(Text.literal("A crash occured from SCMC! Show this to any admins"));
-
+	// I moved to getCrash data into a new one which is used in setCrash to prevent outdated crash report code
+	public static String getCrash(Exception error, boolean writeCR){
 		CrashReport crashReport = new CrashReport("SCMC has well crashed :( *add dramatic car crash sounds* \n\n", new RuntimeException(error.getMessage()));
 
 		CrashReportSection section = crashReport.addElement("Main suspect");
 		section.add("Stack trace", error.fillInStackTrace());
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss.SSS");
 
-		File dafile = new File("./crash-reports/SCMC-CRASH-"+ now.format(formatter) +".txt");
+		if(writeCR){
+			LocalDateTime now = LocalDateTime.now();
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH:mm:ss.SSS");
 
-		LOGGER.error(crashReport.asString());
-		crashReport.writeToFile(dafile);
-		String fullpath = "UNABLE TO GET PATH! SEARCH IN CRASH REPORTS FOLDER";
-        try {
-			fullpath = dafile.getCanonicalPath();
-        } catch (IOException e) {
-         LOGGER.error(e.toString());
-        }
-        LOGGER.info("Crash report has been saved at .{}! \n If you can't manage to solve it, please report it at https://github.com/SkellyBuilds/scmc/issues", fullpath);
+			File dafile = new File("./crash-reports/SCMC-CRASH-"+ now.format(formatter) +".txt");
+			crashReport.writeToFile(dafile);
+			String fullpath = "UNABLE TO GET PATH! SEARCH IN CRASH REPORTS FOLDER";
+			try {
+				fullpath = dafile.getCanonicalPath();
+			} catch (IOException e) {
+				LOGGER.error(e.toString());
+			}
+			LOGGER.info("Crash report has been saved at .{}! \n If you can't manage to solve it, please report it at https://github.com/SkellyBuilds/scmc/issues", fullpath);
+		}
+
+		return "\n" + crashReport.asString();
+	}
+
+	public static void setCrash(Exception error, MinecraftServer server){
+
+		server.sendMessage(Text.literal("A crash occured from SCMC! Show this to any admins"));
+
+		LOGGER.error(getCrash(error, true));
 		LOGGER.error("Shutting down the server! Read the crash report for more information!");
 		server.stop(true);
 	}
 
 	@Override
 	public void onInitialize() {
-
 			ModMenuConfigManager.prepareConfigFile();
 			if (!ModMenuConfigManager.fileExistant()) {
 				LOGGER.info(Text.translatable("scmc.console.welcome", Text.translatable("scmc.welcome.header"), MainModContainer.getMetadata().getVersion()).getString());
@@ -80,9 +87,10 @@ public class SCMC implements ModInitializer {
 
 			svr.setPort(ModMenuConfig.CPORT.getValue());
 
-		ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
+		ServerLifecycleEvents.SERVER_STARTING.register((server) -> {
 			if(!registerd) {
 				registerd = true;
+				serverD = server;
 				Thread main = new Thread(() -> {
 					Thread connection = new Thread(() -> {
 						try {
@@ -93,11 +101,17 @@ public class SCMC implements ModInitializer {
 							cmds.addCommand("getmod", servercmd::getModName);
 							cmds.addCommand("addpmods", servercmd::verifyPlayerMods);
 							svr.init(cmds);
+
 							while (true) {
 								if (!svr.isOnline && svr.crashed) {
 									LOGGER.error("NETWORkING HAS CRASHED!");
 									Exception test = new Exception("Critical exception while running connection thread - " + svr.howC + "\n \nIf this crash is related to your port, fix your permissions or configuration to a proper setting!");
-									setCrash(test, server);
+									if(ModMenuConfig.ENABLESCMCCRASHES.getValue()){
+										setCrash(test, server);
+									} else {
+										LOGGER.error(getCrash(test, false));
+										LOGGER.info("SCMC will not stop the server but it's recommanded to take note!");
+									}
 									break;
 								} else if (svr.isOnline && !svr.crashed) {
 									break;
@@ -116,7 +130,14 @@ public class SCMC implements ModInitializer {
 					});
 
 					connection.setUncaughtExceptionHandler((thread, error) -> {
+						if(!svr.isOnline && ModMenuConfig.ENABLESCMCCRASHES.getValue())
 						setCrash((Exception) error, server);
+						else {
+							if(!ModMenuConfig.ENABLESCMCCRASHES.getValue() && !svr.isOnline){
+								LOGGER.error("SCMC connection thread has errored & it could not recover! \n This is the error report \n");
+								LOGGER.error(getCrash((Exception) error, false));
+							}
+						}
 					});
 
 					connection.setName("Main Thread - Connection - SCMC");
@@ -132,7 +153,12 @@ public class SCMC implements ModInitializer {
 					});
 
 					events.setUncaughtExceptionHandler((thread, error) -> {
-						setCrash((Exception) error, server);
+						if(ModMenuConfig.ENABLESCMCCRASHES.getValue()){
+							setCrash((Exception) error, server);
+						} else {
+							LOGGER.error("An error occured to the events register! This is the following error report: \n");
+							LOGGER.error(getCrash((Exception) error, false));
+						}
 					});
 
 					events.setName("Main Thread - Events - SCMC");

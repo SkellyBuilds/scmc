@@ -48,7 +48,7 @@ public class Network {
         }
         });
 
-        connectionI.setName("Socket Thread "+connectionI.getId());
+        connectionI.setName("Connection Thread - SCMC");
         connectionI.start();
     }
 

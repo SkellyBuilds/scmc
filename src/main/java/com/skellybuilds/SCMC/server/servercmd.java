@@ -255,38 +255,6 @@ public class servercmd {
         out.println(data);
     }
 
-    public static void getsvrcmdname(String[] argument, Socket socket){
-        PrintWriter out;
-        try {
-            out = new PrintWriter(socket.getOutputStream(), true);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Mods md = new Mods();
-        md.loadMods();
-        StringBuilder data = new StringBuilder();
-
-        for(Mods.Mod mod : md.getMods()) {
-            if(argument.length > 0) {
-                if (mod.isComponent && !Objects.equals(argument[0], "withcomponents")) continue; // no components
-            } else {
-                if(mod.isComponent) continue;
-            }
-            if(data.isEmpty()) {
-                data.append(mod.meta.name);
-            } else {
-                data.append(",").append(mod.meta.name);
-            }
-        }
-
-        if(data.isEmpty()){
-            data.append("EMPTY");
-        }
-
-        out.println(data);
-    }
-
     // adds players mods to the map in the future
     public static void verifyPlayerMods(String[] argument, Socket socket){
         PrintWriter out;

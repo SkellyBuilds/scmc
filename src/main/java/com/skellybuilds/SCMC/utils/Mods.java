@@ -21,7 +21,7 @@ public class Mods {
     public void loadMods(){
         for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
             // might be more efficient ways to do this :/
-            if(Objects.equals(mod.getMetadata().getId().toUpperCase(), SCMC.MOD_ID) || mod.getMetadata().getId().contains("fabric-") || mod.getMetadata().getId().contains("fabric") ||  mod.getMetadata().getId().contains("mixin") || mod.getMetadata().getCustomValue("fabric-loom:generated") != null || mod.getMetadata().getName().contains("Java") || Objects.equals(mod.getMetadata().getId(), "minecraft")){
+            if(Objects.equals(mod.getMetadata().getId().toUpperCase(), SCMC.MOD_ID) || mod.getMetadata().getId().contains("fabric-") || mod.getMetadata().getId().contains("fabric") ||  mod.getMetadata().getId().contains("mixin") || mod.getMetadata().getCustomValue("fabric-loom:generated") != null || mod.getMetadata().getName().toUpperCase().contains("JAVA") || Objects.equals(mod.getMetadata().getId(), "minecraft")){
                continue;
             }
 
