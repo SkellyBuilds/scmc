@@ -12,21 +12,21 @@ import net.minecraft.util.Formatting;
 
 import java.util.*;
 
-import static com.skellybuilds.SCMC.SCMC.PlayerN;
+import static com.skellybuilds.SCMC.SCMC.PLAYERS;
 
 public class ServerJoinProcessing {
 public static void onEventRegister(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server){
     Mods md = new Mods();
-    md.loadMods();
+    md.loadMods("nul");
 
     ServerPlayerEntity player = handler.getPlayer();
 
-    if(PlayerN.get(player.getName().getString()) == null){
+    if(PLAYERS.get(player.getName().getString()) == null){
         player.sendMessage(Text.literal("Unable to fetch your player data! Is your server mod menu working or do you have it installed?"));
         return;
     }
 
-    List<String> allIDs = Arrays.asList(PlayerN.get(player.getName().getString()));
+    List<String> allIDs = PLAYERS.get(player.getName().getString()).getMods();
     List<String> ModL = md.getMods().stream().filter(data -> !data.isOptional).map((ra) -> ra.id).toList();
 
     if(!new HashSet<>(allIDs).containsAll(ModL)){

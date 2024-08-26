@@ -14,8 +14,7 @@ import net.minecraft.util.Formatting;
 
 import java.util.*;
 
-import static com.skellybuilds.SCMC.SCMC.LOGGER;
-import static com.skellybuilds.SCMC.SCMC.PlayerN;
+import static com.skellybuilds.SCMC.SCMC.*;
 
 public class ServerLoginProcessing {
     public static void onEventRegister(ServerLoginNetworkHandler handler, MinecraftServer server, PacketSender sender, ServerLoginNetworking.LoginSynchronizer loginSynchronizer){
@@ -25,10 +24,10 @@ public class ServerLoginProcessing {
             username = Objects.requireNonNull(profile).getName();
 
         LOGGER.info("Player with username {} is attempting to join the server.", username);
-        if(PlayerN.get(username) != null){
+        if(PLAYERS.get(username) != null){
             Mods md = new Mods();
-            md.loadMods();
-            List<String> allIDs = Arrays.asList(PlayerN.get(username));
+            md.loadMods("nul");
+            List<String> allIDs = PLAYERS.get(username).getMods();
             List<String> ModL = md.getMods().stream().filter(ra -> !ra.isOptional).map((ra) -> ra.id).toList();
 
 
@@ -75,7 +74,7 @@ public class ServerLoginProcessing {
                 handler.disconnect(fullStuffA);
             }
         } else {
-            if(PlayerN.isEmpty()) handler.disconnect(Text.literal("Please join again, servermodmenu went wrong!?"));
+            if(PLAYERS.isEmpty()) handler.disconnect(Text.literal("Something might be up with server mod menu."));
             else handler.disconnect(Text.literal("You require servermodmenu to use this server!"));
         }
     }

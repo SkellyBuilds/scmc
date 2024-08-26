@@ -2,8 +2,10 @@ package com.skellybuilds.SCMC;
 
 
 import com.skellybuilds.SCMC.config.ModMenuConfig;
+import com.skellybuilds.SCMC.db.Player;
 import com.skellybuilds.SCMC.events.ServerJoinProcessing;
 import com.skellybuilds.SCMC.events.ServerLoginProcessing;
+import com.skellybuilds.SCMC.utils.Locales;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -35,10 +37,12 @@ public class SCMC implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("SCMC [Server Client Mods Checker]");
 	public static Network svr = new Network(27752);
 	public Network.ServerCommands cmds = new Network.ServerCommands();
-	public static final Map<String, String[]> PlayerN = new HashMap<>();
+	public static final Map<String, Player> PLAYERS = new HashMap<>();
+	// Next update, i'll make this a class.
 	public static final ModContainer MainModContainer = FabricLoader.getInstance().getModContainer("scmc").orElse(null);
 	private boolean registerd = false;
 	public static MinecraftServer serverD = null; // may be useful for additional crashes
+	private String prevLoc = "";
 
 	// I moved to getCrash data into a new one which is used in setCrash to prevent outdated crash report code
 	public static String getCrash(Exception error, boolean writeCR){
@@ -74,6 +78,9 @@ public class SCMC implements ModInitializer {
 		server.stop(true);
 	}
 
+
+
+
 	@Override
 	public void onInitialize() {
 			ModMenuConfigManager.prepareConfigFile();
@@ -100,6 +107,8 @@ public class SCMC implements ModInitializer {
 							cmds.addCommand("download", servercmd::downloadFile);
 							cmds.addCommand("getmod", servercmd::getModName);
 							cmds.addCommand("addpmods", servercmd::verifyPlayerMods);
+							cmds.addCommand("addploc", servercmd::setPlayerLocale);
+							cmds.addCommand("getversion", servercmd::getVersion);
 							svr.init(cmds);
 
 							while (true) {
@@ -186,7 +195,8 @@ public class SCMC implements ModInitializer {
 			}
 		});
 
-
+		LOGGER.info("Testing locale from bclib: \"{}\"", Locales.fetchTranslatedText("bclib", "title.link.bclib.discord", "en_us").getString());
+		LOGGER.info("Testing locale 2 from bclib: \"{}\"", Locales.fetchTranslatedText("bclib", "title.bclib.modmenu.main", "ru_ru").getString());
 
 
     }

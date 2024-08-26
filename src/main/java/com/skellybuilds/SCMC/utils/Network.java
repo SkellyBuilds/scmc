@@ -149,7 +149,7 @@ public class Network {
 
             } catch (Exception e) {
                 LoggerFactory.getLogger("SCMC [Server Client Mods Checker]").error("Couldn't read the buffers from socket!");
-                LoggerFactory.getLogger("SCMC [Server Client Mods Checker]").error(e.toString());
+                e.printStackTrace();
                 //throw new RuntimeException("Unable to read socket buffers!");
             }
         }

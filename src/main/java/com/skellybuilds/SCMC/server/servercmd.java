@@ -2,7 +2,9 @@ package com.skellybuilds.SCMC.server;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.skellybuilds.SCMC.SCMC;
 import com.skellybuilds.SCMC.config.ModMenuConfig;
+import com.skellybuilds.SCMC.db.Player;
 import com.skellybuilds.SCMC.utils.Mods;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -13,11 +15,12 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.skellybuilds.SCMC.SCMC.PlayerN;
+import static com.skellybuilds.SCMC.SCMC.PLAYERS;
 
 public class servercmd {
     public static final Logger LOGGER = LoggerFactory.getLogger("SCMC [Server Client Mods Checker]");
@@ -230,13 +233,13 @@ public class servercmd {
         }
 
         Mods md = new Mods();
-        md.loadMods();
+        md.loadMods(argument[0] != null ? argument[0] : "nul");
         StringBuilder data = new StringBuilder();
         Gson gson = new Gson();
         data.append("[");
         for(Mods.Mod mod : md.getMods()) {
-            if(argument.length > 0) {
-                if (mod.isComponent && !Objects.equals(argument[0], "withcomponents")) continue; // no components
+            if(argument.length > 1) {
+                if (mod.isComponent && !Objects.equals(argument[1], "withcomponents")) continue; // no components
             } else {
                 if(mod.isComponent) continue;
             }
@@ -274,8 +277,51 @@ public class servercmd {
         for (int i = 0; i < jsonArray.size(); i++) {
             stringArray[i] = jsonArray.get(i).getAsString();
         }
-        PlayerN.put(jsonObject.get("playerN").getAsString(), stringArray);
+
+
+        if(PLAYERS.get(jsonObject.get("playerN").getAsString()) == null) {
+            Player pyr = new Player(jsonObject.get("playerN").getAsString(), Arrays.asList(stringArray));
+            PLAYERS.put(jsonObject.get("playerN").getAsString(), pyr);
+        } else {
+            Player pyr = PLAYERS.get(jsonObject.get("playerN").getAsString());
+            if(pyr != null){
+                pyr.mods = Arrays.asList(stringArray);
+                PLAYERS.put(jsonObject.get("playerN").getAsString(), pyr);
+            }
+        }
+     //   PlayerN.put(jsonObject.get("playerN").getAsString(), stringArray);
         out.println("OK");
+    }
+
+    public static void setPlayerLocale(String[] argument, Socket socket){
+        PrintWriter out;
+        try {
+            out = new PrintWriter(socket.getOutputStream(), true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        if(PLAYERS.get(argument[0]) != null){
+            PLAYERS.get(argument[0]).setLocale(argument[1]);
+             out.println("OK");
+        } else {
+            Player pyr = new Player(argument[0]);
+            pyr.setLocale(argument[1]);
+            PLAYERS.put(argument[0], pyr);
+        }
+
+
+    }
+
+    public static void getVersion(String[] argument, Socket socket){
+        PrintWriter out;
+        try {
+            out = new PrintWriter(socket.getOutputStream(), true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        out.println(SCMC.MainModContainer.getMetadata().getVersion());
     }
 
 

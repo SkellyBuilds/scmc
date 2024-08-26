@@ -12,5 +12,7 @@
   "scmc.config.desc.usethismods": "This is basically an exception, which ignores everything and registers anyways, sort of like a whitelist",
   "scmc.config.desc.optionalmods": "This list of mods won't be required to download, meaning they won't show up in the missing mod screen and there will be a GUI difference for the mod to clarify via servermodmenu",
   "scmc.config.desc.enablescmccrashes": "When something goes critically wrong on sCMC's end, you can change if SCMC can stop your server & make a crash report.",
-  "scmc.config.desc.port": "Which port should this mod use for SCMC to Server Mod Menu communication - Changing the port means you require a domain for port compatibility for SCMC, learn how to do this at https://github.com/SkellyBuilds/scmc/wiki/Getting-started-using-SCMC#how-do-i-use-different-ports-properly"
+  "scmc.config.desc.port": "Which port should this mod use for SCMC to Server Mod Menu communication - Changing the port means you require a domain for port compatibility for SCMC, learn how to do this at https://github.com/SkellyBuilds/scmc/wiki/Getting-started-using-SCMC#how-do-i-use-different-ports-properly",
+  "scmc.config.desc.canreadmodtranslations": "If a mod tells SCMC via it's fabric config to read it's texts (Like description, links, names etc) and use it instead. If you are an mod developer, here's how you can integrete it in your mod. https://github.com/SkellyBuilds/scmc/wiki/Integreting-SCMC-to-your-fabric-mod",
+  "scmc.config.desc.translatebydefault": "Translate the mod's details anyways even if the mod doesn't add it in it's configuration."
 }

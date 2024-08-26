@@ -7,6 +7,7 @@ import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModOrigin;
 import net.fabricmc.loader.api.metadata.Person;
+import net.minecraft.text.Text;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,7 +19,7 @@ public class Mods {
         return ModL;
     }
 
-    public void loadMods(){
+    public void loadMods(String username){
         for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
             // might be more efficient ways to do this :/
             if(Objects.equals(mod.getMetadata().getId().toUpperCase(), SCMC.MOD_ID) || mod.getMetadata().getId().contains("fabric-") || mod.getMetadata().getId().contains("fabric") ||  mod.getMetadata().getId().contains("mixin") || mod.getMetadata().getCustomValue("fabric-loom:generated") != null || mod.getMetadata().getName().toUpperCase().contains("JAVA") || Objects.equals(mod.getMetadata().getId(), "minecraft")){
@@ -91,13 +92,118 @@ public class Mods {
             }
 
 
+
+            String uLocale;
+
+                if (SCMC.PLAYERS.get(username) != null) {
+                    uLocale = SCMC.PLAYERS.get(username).getLocale();
+                } else {
+                    uLocale = "en_us";
+                }
+
+
             Mod newMod = new Mod();
             if(mod.getOrigin().getKind() == ModOrigin.Kind.NESTED) newMod.isComponent = true;
             ModMeta meta = new ModMeta();
             newMod.id = mod.getMetadata().getId();
             newMod.version = mod.getMetadata().getVersion().toString();
-            meta.baseDesc = mod.getMetadata().getDescription();
-            meta.name = mod.getMetadata().getName();
+
+            // Name, Description, Link title support translations
+            if(ModMenuConfig.CANTRANSLATEMTEXTS.getValue() || ModMenuConfig.TRANSLATEANYWAYS.getValue()){
+                if(!ModMenuConfig.TRANSLATEANYWAYS.getValue() && mod.getMetadata().getCustomValue("scmc") != null){
+                    CustomValue.CvObject scmcT = mod.getMetadata().getCustomValue("scmc").getAsObject();
+                if(scmcT.get("checkmytranslationstext") != null) {
+                    if (scmcT.get("checkmytranslationstext").getAsBoolean()) {
+
+                        Text modN = Text.translatable(mod.getMetadata().getName());
+                        Text desc = Text.translatable(mod.getMetadata().getDescription());
+
+                        meta.name = modN.getString();
+                        meta.baseDesc = desc.getString();
+                        Links meme = new Links();
+
+                        CustomValue modMenuValue = mod.getMetadata().getCustomValue("modmenu");
+                        if (modMenuValue != null && modMenuValue.getType() == CustomValue.CvType.OBJECT) {
+                            CustomValue.CvObject modMenuObject = modMenuValue.getAsObject();
+
+                            if (com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).isEmpty()) {
+                                meme.setLinks(new HashMap<>());
+                            } else {
+                                Map<String, String> strML = com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).get();
+                                Map<String, String> newStrML = new HashMap<>();
+                                strML.forEach((Name, URL) -> {
+                                    newStrML.put(Locales.fetchTranslatedText(mod.getMetadata().getId(), Name, uLocale).getString(), URL);
+                                });
+
+                                meme.setLinks(newStrML);
+                            }
+                        }
+
+                        meta.links = meme;
+                    }
+                }
+                } else if(ModMenuConfig.TRANSLATEANYWAYS.getValue()){
+                    Text modN = Text.translatable(mod.getMetadata().getName());
+                    Text desc = Text.translatable(mod.getMetadata().getDescription());
+
+                    meta.name = modN.getString();
+                    meta.baseDesc = desc.getString();
+                    Links meme = new Links();
+
+                    CustomValue modMenuValue = mod.getMetadata().getCustomValue("modmenu");
+                    if (modMenuValue != null && modMenuValue.getType() == CustomValue.CvType.OBJECT) {
+                        CustomValue.CvObject modMenuObject = modMenuValue.getAsObject();
+
+                        if (com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).isEmpty()) {
+                            meme.setLinks(new HashMap<>());
+                        } else {
+                            Map<String, String> strML = com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).get();
+                            Map<String, String> newStrML = new HashMap<>();
+                            strML.forEach((Name, URL) -> {
+                                newStrML.put(Locales.fetchTranslatedText(mod.getMetadata().getId(), Name, uLocale).getString(), URL);
+                            });
+
+                            meme.setLinks(newStrML);
+                        }
+                    }
+
+                    meta.links = meme;
+                }
+                else {
+                    meta.baseDesc = mod.getMetadata().getDescription();
+                    meta.name = mod.getMetadata().getName();
+                    Links meme = new Links();
+
+                    CustomValue modMenuValue = mod.getMetadata().getCustomValue("modmenu");
+                    if (modMenuValue != null && modMenuValue.getType() == CustomValue.CvType.OBJECT) {
+                        CustomValue.CvObject modMenuObject = modMenuValue.getAsObject();
+
+                        if (com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).isEmpty()) {
+                            meme.setLinks(new HashMap<>());
+                        }
+                        meme.setLinks(com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).orElse(new HashMap<>()));
+                    }
+
+                    meta.links = meme;
+                }
+            } else {
+                meta.baseDesc = mod.getMetadata().getDescription();
+                meta.name = mod.getMetadata().getName();
+                Links meme = new Links();
+
+                CustomValue modMenuValue = mod.getMetadata().getCustomValue("modmenu");
+                if (modMenuValue != null && modMenuValue.getType() == CustomValue.CvType.OBJECT) {
+                    CustomValue.CvObject modMenuObject = modMenuValue.getAsObject();
+
+                    if (com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).isEmpty()) {
+                        meme.setLinks(new HashMap<>());
+                    }
+                    meme.setLinks(com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).orElse(new HashMap<>()));
+                }
+
+                meta.links = meme;
+            }
+
             List<String> cNames = new ArrayList<>();
             List<String> aNames = new ArrayList<>();
             for (Person wah :  mod.getMetadata().getContributors()) {
@@ -128,19 +234,6 @@ public class Mods {
 
             meta.contact = was;
 
-            Links meme = new Links();
-
-            CustomValue modMenuValue = mod.getMetadata().getCustomValue("modmenu");
-            if (modMenuValue != null && modMenuValue.getType() == CustomValue.CvType.OBJECT) {
-                CustomValue.CvObject modMenuObject = modMenuValue.getAsObject();
-
-                if(com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).isEmpty()) {
-                meme.setLinks(new HashMap<>());
-                }
-                meme.setLinks(com.skellybuilds.SCMC.utils.CustomValues.getStringMap("links", modMenuObject).orElse(new HashMap<>()));
-            }
-
-            meta.links = meme;
             if(mod.getOrigin().getKind() != ModOrigin.Kind.NESTED) {
                 meta.icon = com.skellybuilds.SCMC.utils.Encoders.getModLogoAsBase64(mod.getMetadata().getId());
             }
